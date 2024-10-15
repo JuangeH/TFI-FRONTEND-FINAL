@@ -1,0 +1,165 @@
+﻿@inject IJSRuntime JSRuntime
+@using System.Net.Http.Headers
+@inject ISnackbar Snackbar
+@inject ISessionStorageService sessionStorage
+@inject HttpClient httpClient
+@inject NavigationManager NavManager
+
+
+<nav>
+    <div class="sidebar-top">
+        <span class="expand-btn">
+            <img src="assets/ToolBar/chevron.svg" alt="Chevron">
+        </span>@*
+        <img src="assets/ToolBar/logo.svg"
+             class="logo"
+             alt="Laplace Logo">
+        <h3 class="hide">Laplace</h3>*@
+    </div>
+    <div class="sidebar-links">
+        <ul>
+            <li>
+                <a href="/" class="active" title="Portfolio link">
+                    <div class="icon">
+                        <img src="assets/ToolBar/portfolio.svg" title="Portfolio Icon">
+                    </div>
+                    <span class="link hide">Recomendaciones</span>
+                </a>
+            </li>
+            <li>
+                <a href="Catalogo" title="Portfolio link">
+                    <div class="icon">
+                        <img src="assets/ToolBar/portfolio.svg" title="Portfolio Icon">
+                    </div>
+                    <span class="link hide">Catálogo</span>
+                </a>
+            </li>
+            <li>
+                <a href="foros" title="Analytics link">
+                    <div class="icon">
+                        <img src="assets/ToolBar/analytics.svg" title="Analytics Icon">
+                    </div>
+                    <span class="link hide">Foros</span>
+                </a>
+            </li>
+            <li>
+                <a href="Auditoria" title="Performance link">
+                    <div class="icon">
+                        <img src="assets/ToolBar/dashboard.svg" title="Performance Icon">
+                    </div>
+                    <span class="link hide">Auditoría</span>
+                </a>
+            </li>
+            <li>
+                <a href="Bitacora" title="Reports Link">
+                    <div class="icon">
+                        <img src="assets/ToolBar/reports.svg" title="Reports Icon">
+                    </div>
+                    <span class="link hide">Bitácora</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="sidebar-bottom">
+        <div class="sidebar-links">
+            <ul>
+                <li>
+                    <a href="Config" title="Suscripcion" class="tooltip">
+                        <img src="assets/ToolBar/settings.svg" alt="Settings">
+                        <span class="link hide">Suscripción</span>
+                        <span class="tooltip__content">Settings</span>
+                    </a>
+                </li>
+            </ul>
+            <ul>
+                <li>
+                    <a href="javascript:void(0)" @onclick="CerrarSesion" title="Reports Link">
+                        <div class="icon">
+                            <img src="/assets/Toolbar/door-enter-svgrepo-com (2).svg" title="Reports Icon">
+                        </div>
+                        <span class="link hide">Salir</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="sidebar__profile">
+            <div class="avatar__wrapper">
+                <img class="avatar" src="/assets/Usuario Menu/user.png" alt="Profile">
+            </div>
+            @*<div class="avatar__wrapper">
+                <img class="avatar" src="assets/ToolBar/profile.jpg" alt="Profile">
+                <div class="online__status"></div>
+            </div>*@
+            <div class="avatar__name hide">
+                @if (user != null)
+                {
+                    <div class="email">@user.Email</div>
+                }
+                else
+                {
+                    <div class="email">Cargando...</div>
+                }
+            </div>
+        </div>
+    </div>
+</nav>
+
+
+
+@code {
+
+    public LoginTokenResponse? user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await sessionStorage.GetItemAsync<LoginTokenResponse>("user");
+        httpClient.DefaultRequestHeaders.Clear();
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", user.Token);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("expandCollapseBody");
+                await JSRuntime.InvokeVoidAsync("activateLinks");
+                
+            }
+            catch (Exception)
+            {
+
+            }
+        }
+    }
+
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    private async Task CerrarSesion()
+    {
+        await sessionStorage.SetItemAsync("popupShown", false);
+
+        await sessionStorage.RemoveItemAsync("user");
+
+        // Limpiar la cabecera de autorización
+        httpClient.DefaultRequestHeaders.Authorization = null;
+
+        // Mostrar un mensaje informando que se ha cerrado la sesión
+        Snackbar.Add("Sesión cerrada exitosamente.", Severity.Success, options =>
+        {
+            options.VisibleStateDuration = 1000; // Duración en milisegundos (2 segundos)
+        });
+
+        // Redirigir a la página de inicio de sesión
+        NavManager.NavigateTo("login");
+    }
+
+}

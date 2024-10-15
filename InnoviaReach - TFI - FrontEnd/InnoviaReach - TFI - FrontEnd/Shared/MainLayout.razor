@@ -1,0 +1,67 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager NavManager
+
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<PageTitle>InnoviaReach</PageTitle>
+
+@if (_LoggedIn)
+{
+    <div class="page">
+        <div class="sidebar">
+            <div class="NavMenu">
+                <NavMenu />
+            </div>
+            <div class="ContentInnovia">
+                <main>
+                    <div>
+                        <a href="/"></a>
+                    </div>
+                    <article>
+                        @Body
+                    </article>
+                </main>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <p>Redirigiendo al inicio de sesión...</p>
+}
+
+@code {
+    private MudTheme _theme = new();
+    private bool _isDarkMode = true;
+    private bool _LoggedIn = false;
+    private LoginTokenResponse? user;
+
+    [Inject]
+    private ISessionStorageService _sessionStorageService { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Intenta obtener al usuario logueado del almacenamiento de sesión
+            user = await _sessionStorageService.GetItemAsync<LoginTokenResponse>("user");
+
+            if (user is null)
+            {
+                // Redirige al usuario a la página de login si no está autenticado
+                NavManager.NavigateTo("/login");
+            }
+            else
+            {
+                // Marca que el usuario está logueado
+                _LoggedIn = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Puedes manejar el error aquí si es necesario
+        }
+    }
+}
